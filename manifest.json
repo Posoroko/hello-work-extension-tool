@@ -1,0 +1,34 @@
+{
+    "manifest_version": 3,
+    "name": "Hello Work Tool",
+    "description": "Mark the jobs you already applied to on Hello Work.",
+    "version": "1.0",
+    "action": {
+        "default_popup": "popup.html",
+        "default_icon": "images/icon-inactive.png"
+    },
+    "permissions": [
+        "activeTab",
+        "storage",
+        "scripting",
+        "tabs"
+    ],
+    "content_scripts": [
+        {
+            "matches": ["https://www.hellowork.com/fr-fr/candidat/offres.html"],
+            "js": ["candidatures.js"]
+        },
+        {
+            "matches": ["https://www.hellowork.com/fr-fr/emploi/recherche.html*"],
+            "js": ["recherche.js"]
+        }
+    ],
+    "background": {
+        "service_worker": "background.js"
+    },
+    "icons": {
+        "16": "images/icon-16x16.png",
+        "48": "images/icon-48x48.png",
+        "128": "images/icon-128x128.png"
+    }
+}
