@@ -1,19 +1,31 @@
+window.onload = () => {
+    dataTabs_section.append(createInfo());
+}
+
 if(window.location.hash.includes('candidatures')) {
     (async () => {
-        let bookmarksArray = await getBookMarksFromPage();
+        let bookmarksArray = await getOffersFromPage();
         let listOfIds = createListOfIds(bookmarksArray);
         sendListOfIdToBackgroundScript(listOfIds);
     })();
 }
+function createInfo() {
+    const p = document.createElement('p');
+    p.classList.add('extensionTooltip');
+    p.innerText = 'En visitant cette page, Helo work + sauvegarde vos candidatures pour les identifier dans les résultats de recherche.';
+    for (let key in styleForPElement) {
+        p.style[key] = styleForPElement[key];
+    }
+    return p;
+}
 
-
-async function getBookMarksFromPage(list = [], counter = 0) {
-    list = [...document.querySelectorAll('[data-offerid]')];
+async function getOffersFromPage(list = [], counter = 0) {
+    list = [...document.querySelectorAll('h3 > a')];
     
     if(!list.length && counter < 10) {
         return new Promise(resolve => {
             setTimeout(() => {
-                resolve(getBookMarksFromPage(list, counter + 1));
+                resolve(getOffersFromPage(list, counter + 1));
             }, 500);
         });
     }
@@ -22,12 +34,14 @@ async function getBookMarksFromPage(list = [], counter = 0) {
     return list;
 }
 
-function createListOfIds(bookmarksArray) {
-    let list = bookmarksArray.map((bookmark) => {
-        return bookmark.getAttribute('data-offerid');
-    });
-    console.log('list of ids: ', list);
-    return list
+function createListOfIds(listOfAnchorTags) {
+    
+    let listOfIds = listOfAnchorTags.map((tag) => {
+        let urlAsArray = tag.href.split('/');
+        return urlAsArray[urlAsArray.length - 1].split('.')[0];
+    })
+
+    return listOfIds
 }
 
 function sendListOfIdToBackgroundScript(list) {
@@ -44,17 +58,7 @@ let styleForPElement = {
     marginBottom: '20px'
 }
 
-function createInfo() {
-    const p = document.createElement('p');
-    p.classList.add('extensionTooltip');
-    p.innerText = 'Once the jobs you applied for are saved, you can go to the research page and they will be marked with a checkmark';
-    for (let key in styleForPElement) {
-        p.style[key] = styleForPElement[key];
-    }
-    return p;
-}
 
-window.onload = () => {
-    dataTabs_section.append(createInfo());
-}
+
+
 
