@@ -5,13 +5,12 @@
     "version": "1.0",
     "action": {
         "default_popup": "popup.html",
-        "default_icon": "images/icon-inactive.png"
+        "default_icon": "images/icon-active.png"
     },
     "permissions": [
         "activeTab",
         "storage",
-        "scripting",
-        "tabs"
+        "scripting"
     ],
     "content_scripts": [
         {
@@ -34,7 +33,7 @@
     "web_accessible_resources": [
     {
         "resources": ["images/check.png"],
-        "matches": ["<all_urls>"]
+        "matches": ["https://www.hellowork.com/*"]
     }
 ]
 }

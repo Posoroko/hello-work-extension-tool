@@ -1,23 +1,85 @@
-window.onload = () => {
-    dataTabs_section.append(createInfo());
+const dataTabs_section = document.querySelector('main');
+let infomessage_p = null;
+let saveButton = null;
+let offersGatheredFromPage = false;
+let infoMessage = '';
+async function messageWithDaysSinceLastupdate() {
+    let days = await numberOfDaysSinceLastUpdate();
+    return `Vous avez sauvegardé vos candidatures pour la dernière fois il y a ${days} jours. Cliquez sur le bouton ci-dessous pour faire une nouvelle sauvegarde.`;
 }
 
-if(window.location.hash.includes('candidatures')) {
-    (async () => {
-        let bookmarksArray = await getOffersFromPage();
-        let listOfIds = createListOfIds(bookmarksArray);
-        sendListOfIdToBackgroundScript(listOfIds);
-    })();
+window.onload = async () => {
+    dataTabs_section.prepend(await createInfo());
 }
-function createInfo() {
+async function messageWithDaysSinceLastupdate() {
+    let days = await numberOfDaysSinceLastUpdate();
+    return `Vous avez sauvegardé vos candidatures pour la dernière fois il y a ${days} jours. Cliquez sur le bouton ci-dessous pour faire une nouvelle sauvegarde.`;
+}
+async function numberOfDaysSinceLastUpdate() {
+    let lastUpdate = await new Promise(resolve => {
+        chrome.storage.local.get(['date'], (res) => {
+            console.log('Value currently is ' + res.date);
+            resolve(res.date);
+        });
+    });
+    console.log('lastUpdate: ', lastUpdate);
+    return Math.floor((new Date() - new Date(lastUpdate)) / (1000*60*60*24));
+}
+
+async function createInfo() {
+    const div = document.createElement('div');
+    const stylesFordiv = {
+        display: 'grid',
+        placeItems: 'center',
+        backgroundColor: '#0D1F2D',
+        padding: '20px',
+        display: 'flex',
+        justifyContent: 'center',
+        flexWrap: 'wrap'
+    }
+    div.style.display = 'grid';
+    div.style.placeItems = 'center';
+    div.style.backgroundColor = '#0D1F2D';
+    div.style.padding = '20px';
+    div.style.display = 'flex';
+    div.style.justifyContent = 'center';
     const p = document.createElement('p');
     p.classList.add('extensionTooltip');
-    p.innerText = 'En visitant cette page, Helo work + sauvegarde vos candidatures pour les identifier dans les résultats de recherche.';
+    p.innerText = await messageWithDaysSinceLastupdate();
+    let styleForPElement = {
+        width: "min(800px, 100%)",
+        color: '#fff'
+    }
     for (let key in styleForPElement) {
         p.style[key] = styleForPElement[key];
     }
-    return p;
+    infomessage_p = p;
+    div.appendChild(p);
+    div.appendChild(createSaveButton());
+    return div;
 }
+
+function createSaveButton() {
+    const button = document.createElement('button');
+    button.addEventListener('click', () => {
+        handleSaveButtonClick();
+    });
+    button.classList.add('extensionTooltip');
+    button.innerText = 'Sauvegarder';
+    let buttonStyles = {
+        color: '#fff',
+        backgroundColor: 'green',
+        padding: '5px 10px',
+        margin: '0 20px',
+        display: 'block'
+    }
+    for (let key in buttonStyles) {
+        button.style[key] = buttonStyles[key];
+    }
+    saveButton = button;
+    return button;
+}
+
 
 async function getOffersFromPage(list = [], counter = 0) {
     list = [...document.querySelectorAll('h3 > a')];
@@ -29,7 +91,8 @@ async function getOffersFromPage(list = [], counter = 0) {
             }, 500);
         });
     }
-    console.log('list of bookmarks: ', list);
+
+    offersGatheredFromPage = true;
 
     return list;
 }
@@ -45,20 +108,30 @@ function createListOfIds(listOfAnchorTags) {
 }
 
 function sendListOfIdToBackgroundScript(list) {
-    chrome.runtime.sendMessage({ listOfIds: list, date: new Date().toString() });
-    console.log('list of ids sent to background script');
-};
+    if(!list.length) {
+        saveButton.style.display = 'block';
+        return;
+    }
     
-const dataTabs_section = document.querySelector('[data-tabs]');
 
-let styleForPElement = {
-    backgroundColor: '#0D1F2D',
-    color: '#fff',
-    padding: '20px',
-    marginBottom: '20px'
+    chrome.runtime.sendMessage({ listOfIds: list, date: new Date().toString() }, response => {
+        if (chrome.runtime.lastError) {
+            infomessage_p.innerText = "Vos candidatures on bien été sauvegardées ! Elles seront clairement identifiées lors de vos prochaines recherches."
+            saveButton.style.display = 'none';
+        } else {
+            saveButton.style.display = 'block';
+        }
+    });
+};
+
+async function handleSaveButtonClick() {
+    console.log('clicked');
+    let offersFromPage = await getOffersFromPage();
+
+    if(!offersFromPage.length) {
+        infomessage_p.innerText = "Nous n'avons pas trouvé de candidature sur la page. Cliquez pour essayer à nouveau :"
+        return;
+    }
+    let listOfIds = createListOfIds(offersFromPage);
+    sendListOfIdToBackgroundScript(listOfIds);
 }
-
-
-
-
-
